@@ -4,7 +4,7 @@
 -}
 module Set (Set,
             empty, fromList,
-            insert, member) where
+            insert, member,size,height) where
 
 import Data.List (sort)
 
@@ -41,3 +41,11 @@ fromList xs = build (sort xs)
          k = length xs `div` 2
          xs' = take k xs
          x:xs''= drop k xs
+
+size :: Set a -> Int
+size Empty = 0
+size (Node _ left right) = 1 + size left + size right  
+
+height :: Set a -> Int
+height Empty = 0  
+height (Node _ left right) = 1 + max (height left) (height right)
