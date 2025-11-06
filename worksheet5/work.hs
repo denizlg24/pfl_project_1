@@ -71,7 +71,7 @@ type Paragraph = [Line]
 
 type Dict = [String]
 readDict :: IO Dict
-readDict = do 
+readDict = do
     txt <- readFile "words"
     return (words txt)
 
@@ -91,3 +91,45 @@ checkWords ws = map (checkWord ws)
 --     let result = checkWords wordSet ["deniz", "denz", "playo", "pelayo", "big", "tst"]
 --     mapM_ putStrLn result
 
+type Name = Char -- ’x’, ’y’, ’z’, etc.
+data Prop = Const Bool
+        | Var Name
+        | Not Prop
+        | And Prop Prop
+        | Imply Prop Prop
+        | Or Prop Prop
+
+vars :: Prop -> [Name]
+vars (Var a) = [a]
+vars (Not a) = vars a
+vars (And a b) = vars a ++ vars b
+vars (Imply a b) = vars a ++ vars b
+vars (Or a b) = vars a ++ vars b
+
+booleans :: Int -> [[Bool]]
+booleans 1 = [[False],[True]]
+booleans n = [False:bs | bs <- bss] ++ [True:bs | bs <- bss]
+    where bss = booleans (n-1)
+
+
+type Env = [(Name, Bool)]
+environments :: [Name] -> [Env]
+environments names = map (zip names) (booleans (length names))
+
+
+eval :: Env-> Prop -> Bool
+eval env (Const b) = b
+eval env (Var x)
+    = case lookup x env of
+        Just b -> b
+        Nothing -> error "undefined variable"
+eval env (Not p) = not (eval env p)
+eval env (And p q) = eval env p && eval env q
+eval env (Imply p q) = not (eval env p) || eval env q
+
+
+table :: Prop -> [(Env,Bool)]
+table prop = [(env, eval env prop) | env <- environments (vars prop) ]
+
+satisfies :: Prop -> [Env]
+satisfies prop = [env | (env, True) <- table prop]
