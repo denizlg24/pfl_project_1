@@ -38,6 +38,7 @@ eval env (Var v) = case lookup v env of
                       Just val -> val
                       Nothing -> error ("undefined variable: " ++ v)
 
+
 type Env = [( Name , Integer )]
 type Command = ( Name , Expr )
 -- | a parser for expressions
@@ -111,25 +112,30 @@ natural = do xs <- many1 (satisfy isDigit)
 
 variable :: Parser String
 variable = do xs <- many1 (satisfy isAlpha)
-              return (read xs)         
+              return xs      
 
 ----------------------------------------------------------------             
   
 main :: IO ()
-main
-  = do txt <- getContents
-       calculator (lines txt)
+main = do
+  txt <- getContents
+  calculator [] (lines txt)
 
 -- | read-eval-print loop
-calculator :: [String] -> IO ()
-calculator []  = return ()
-calculator (l:ls) = do 
-                          putStrLn (evaluate [] l)
-                          calculator ls  
+calculator :: Env -> [String] -> IO ()
+calculator env [] = return ()
+calculator env (l:ls) = do
+  let (output, env') = execute env l
+  putStrLn output
+  calculator env' ls
 
--- | evaluate a single expression
-evaluate :: Env -> String -> String
-evaluate env txt
-  = case parse expr txt of
-      [ (tree, "") ] ->  show (eval env tree)
-      _ -> "parse error; try again"  
+-- | execute a command
+execute :: Env -> String -> (String, Env)
+execute env txt =
+  case parse command txt of
+    [(("", exprTree), "")] ->
+        (show (eval env exprTree), env)
+    [((var, exprTree), "")] ->
+        let val = eval env exprTree
+        in  (show val, (var, val) : env)
+    _ -> ("parse error; try again", env)
